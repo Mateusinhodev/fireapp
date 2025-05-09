@@ -1,17 +1,46 @@
+import { useEffect, useState,  } from 'react';
 import './home.css'
 
-import { useState } from 'react';
-import { auth } from '../../firebaseConnection';
+import { auth, db } from '../../firebaseConnection';
 import { signOut } from 'firebase/auth';
+
+import { addDoc, collection } from 'firebase/firestore';
 
 export default function Home() {
 
     const [tarefaInput, setTarefaInput] = useState('');
+    const [user, setUser] = useState({})
 
-    function handleRegister(e) {
+    useEffect(() => {
+        async function loadTarefas() {
+            const userDatail = localStorage.getItem("@detailUser")
+            setUser(JSON.parse(userDatail))
+        }
+
+        loadTarefas()
+    }, [])
+
+    async function handleRegister(e) {
         e.preventDefault();
 
-        alert("Clicou")
+        if(tarefaInput === '') {
+            alert("Digite sua tarefa")
+            return;
+        }
+
+        await addDoc(collection(db, "tarefas"), {
+            tarefas: tarefaInput,
+            created: new Date(),
+            userUid: user?.uid
+        })
+        .then(() => {
+            console.log("Tarefa registrada!")
+            setTarefaInput('')
+        })
+        .catch((error) => {
+            console.log("ERRO AO REGISTRAR " + error)
+        })
+        
     }
 
     async function handleLogout() {
