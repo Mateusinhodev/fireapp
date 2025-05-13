@@ -4,12 +4,13 @@ import './home.css'
 import { auth, db } from '../../firebaseConnection';
 import { signOut } from 'firebase/auth';
 
-import { addDoc, collection, onSnapshot, query, orderBy, where, snapshotEqual, doc, deleteDoc } from 'firebase/firestore';
+import { addDoc, collection, onSnapshot, query, orderBy, where, snapshotEqual, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 
 export default function Home() {
 
     const [tarefaInput, setTarefaInput] = useState('');
     const [user, setUser] = useState({})
+    const [edit, setEdit] = useState({})
 
     const [tarefas, setTarefas] = useState([])
 
@@ -52,6 +53,11 @@ export default function Home() {
             return;
         }
 
+        if(edit?.id) {
+            handleUpdateTarefa();
+            return;
+        }
+
         await addDoc(collection(db, "tarefas"), {
             tarefa: tarefaInput,
             created: new Date(),
@@ -76,6 +82,28 @@ export default function Home() {
         await deleteDoc(docRef)
     }
 
+    function editTarefa(item) {
+        setTarefaInput(item.tarefa)
+        setEdit(item)
+    }
+
+    async function handleUpdateTarefa() {
+        const docRef = doc(db, "tarefas", edit?.id)
+        await updateDoc(docRef, {
+            tarefa: tarefaInput
+        })
+        .then(() => {
+            console.log("TAREFA ATUALIZADA");
+            setTarefaInput('')
+            setEdit({})
+        })
+        .catch(() => {
+            console.log("ERRO AO ATUALIZAR")
+            setTarefaInput('')
+            setEdit({})
+        })
+    }
+
     return(
         <div className='home-container'>
             <h1>Minhas tarefas</h1>
@@ -87,7 +115,11 @@ export default function Home() {
                     onChange={(e) => setTarefaInput(e.target.value)}
                 />
 
-                <button className='btn-register' type='submit'>Registrar tarefa</button>
+                {Object.keys(edit).length > 0 ? (
+                    <button className='btn-register' type='submit'>Atualizar tarefa</button>
+                ) : (
+                    <button className='btn-register' type='submit'>Registrar tarefa</button>
+                )}
             </form>
 
             {tarefas.map((item) => (
@@ -95,7 +127,7 @@ export default function Home() {
                     <p>{item.tarefa}</p>
 
                     <div>
-                        <button>Editar</button>
+                        <button onClick={() => editTarefa(item)}>Editar</button>
                         <button className='btn-delete' onClick={() => deleteTarefa(item.id)}>Concluir</button>
                     </div>
                 </article>
